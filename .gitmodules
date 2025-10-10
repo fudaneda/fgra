@@ -1,0 +1,16 @@
+[submodule "app-compiler"]
+	path = app-compiler
+	url = https://cnb.cool/fudaneda/app-compiler.git
+	branch = main
+[submodule "benchmarks"]
+	path = benchmarks
+	url = https://cnb.cool/fudaneda/benchmarks.git
+	branch = main
+[submodule "fgra-mapper"]
+	path = fgra-mapper
+	url = https://cnb.cool/fudaneda/fgra-mapper.git
+	branch = main
+[submodule "fgra-mg"]
+	path = fgra-mg
+	url = https://cnb.cool/fudaneda/fgra-mg.git
+	branch = main

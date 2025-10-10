@@ -1,0 +1,163 @@
+$(sim): $(model_mk) $(dramsim_lib)
+	$(MAKE) VM_PARALLEL_BUILDS=1 -C $(model_dir) -f V$(VLOG_MODEL).mk
+
+VLOG_MODEL        ?= TestHarness
+
+
+dramsim_dir = $(base_dir)/tools/DRAMSim2
+dramsim_lib = $(dramsim_dir)/libdramsim.a
+
+$(dramsim_lib):
+	$(MAKE) -C $(dramsim_dir) $(notdir $@)
+
+
+$(model_mk): $(sim_vsrcs) $(sim_common_files) $(EXTRA_SIM_REQS)
+	rm -rf $(model_dir)
+	mkdir -p $(model_dir)
+	$(VERILATOR) $(VERILATOR_OPTS) $(EXTRA_SIM_SOURCES) -o $(sim) -Mdir $(model_dir) -CFLAGS "-include $(model_header)"
+	touch $@
+
+EXTRA_SIM_REQS       ?=
+
+sim_vsrcs = \
+	$(TOP_FILE) \
+	$(HARNESS_FILE) \
+	$(TOP_SMEMS_FILE) \
+	$(HARNESS_SMEMS_FILE)
+
+
+TOP_FILE       ?= $(build_dir)/$(long_name).top.v
+HARNESS_FILE       ?= $(build_dir)/$(long_name).harness.v
+TOP_SMEMS_FILE ?= $(build_dir)/$(long_name).top.mems.v
+HARNESS_SMEMS_FILE ?= $(build_dir)/$(long_name).harness.mems.v
+
+
+TOP_TARGETS = $(TOP_FILE) $(TOP_SMEMS_CONF) $(TOP_ANNO) $(TOP_FIR) $(sim_top_blackboxes)
+HARNESS_TARGETS = $(HARNESS_FILE) $(HARNESS_SMEMS_CONF) $(HARNESS_ANNO) $(HARNESS_FIR) $(sim_harness_blackboxes)
+
+# DOC include start: FirrtlCompiler
+# NOTE: These *_temp intermediate targets will get removed in favor of make 4.3 grouped targets (&: operator)
+.INTERMEDIATE: firrtl_temp
+$(TOP_TARGETS) $(HARNESS_TARGETS): firrtl_temp
+	@echo "" > /dev/null
+
+firrtl_temp: $(FIRRTL_FILE) $(ANNO_FILE) $(VLOG_SOURCES)
+	$(call run_scala_main,tapeout,barstools.tapeout.transforms.GenerateTopAndHarness,\
+		--allow-unrecognized-annotations \
+		--output-file $(TOP_FILE) \
+		--harness-o $(HARNESS_FILE) \
+		--input-file $(FIRRTL_FILE) \
+		--syn-top $(TOP) \
+		--harness-top $(VLOG_MODEL) \
+		--annotation-file $(ANNO_FILE) \
+		--top-anno-out $(TOP_ANNO) \
+		--top-dotf-out $(sim_top_blackboxes) \
+		--top-fir $(TOP_FIR) \
+		--harness-anno-out $(HARNESS_ANNO) \
+		--harness-dotf-out $(sim_harness_blackboxes) \
+		--harness-fir $(HARNESS_FIR) \
+		$(REPL_SEQ_MEM) \
+		$(HARNESS_CONF_FLAGS) \
+		--target-dir $(build_dir) \
+		--log-level $(FIRRTL_LOGLEVEL) \
+		$(EXTRA_FIRRTL_OPTIONS))
+	touch $(sim_top_blackboxes) $(sim_harness_blackboxes)
+
+# This file is for simulation only. VLSI flows should replace this file with one containing hard SRAMs
+MACROCOMPILER_MODE ?= --mode synflops
+.INTERMEDIATE: top_macro_temp
+$(TOP_SMEMS_FILE) $(TOP_SMEMS_FIR): top_macro_temp
+	@echo "" > /dev/null
+
+top_macro_temp: $(TOP_SMEMS_CONF)
+	$(call run_scala_main,tapeout,barstools.macros.MacroCompiler,-n $(TOP_SMEMS_CONF) -v $(TOP_SMEMS_FILE) -f $(TOP_SMEMS_FIR) $(MACROCOMPILER_MODE))
+
+HARNESS_MACROCOMPILER_MODE = --mode synflops
+.INTERMEDIATE: harness_macro_temp
+$(HARNESS_SMEMS_FILE) $(HARNESS_SMEMS_FIR): harness_macro_temp
+	@echo "" > /dev/null
+
+harness_macro_temp: $(HARNESS_SMEMS_CONF) | top_macro_temp
+	$(call run_scala_main,tapeout,barstools.macros.MacroCompiler, -n $(HARNESS_SMEMS_CONF) -v $(HARNESS_SMEMS_FILE) -f $(HARNESS_SMEMS_FIR) $(HARNESS_MACROCOMPILER_MODE))
+
+
+
+
+sim_common_files       ?= $(build_dir)/sim_files.common.f
+$(sim_common_files): $(sim_files) $(sim_top_blackboxes) $(sim_harness_blackboxes)
+	sort -u $^ | grep -v '.*\.\(svh\|h\)$$' > $@
+
+sim_top_blackboxes     ?= $(build_dir)/firrtl_black_box_resource_files.top.f
+sim_harness_blackboxes ?= $(build_dir)/firrtl_black_box_resource_files.harness.f
+
+
+sim_files              ?= $(build_dir)/sim_files.f
+# copy files and add -FI for *.h files in *.f
+$(sim_files): $(SIM_FILE_REQS) | $(build_dir)
+	cp -f $^ $(build_dir)
+	$(foreach file,\
+		$^,\
+		$(if $(filter %.h,$(file)),\
+			echo "-FI $(addprefix $(build_dir)/, $(notdir $(file)))" >> $@;,\
+			echo "$(addprefix $(build_dir)/, $(notdir $(file)))" >> $@;))
+
+
+# the following files are needed for emulator.cc to compile
+SIM_FILE_REQS =
+SIM_FILE_REQS += \
+	$(CHIPYARD_RSRCS_DIR)/csrc/emulator.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/verilator.h \
+
+SIM_FILE_REQS += \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/SimSerial.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/testchip_tsi.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/testchip_tsi.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/SimDRAM.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm_dramsim2.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm_dramsim2.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/SimDTM.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/SimJTAG.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/remote_bitbang.h \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/remote_bitbang.cc
+
+
+#----------------------------------------------------------------------------------------
+# full verilator+gcc opts
+#----------------------------------------------------------------------------------------
+VERILATOR_OPTS = $(VERILATOR_CC_OPTS) $(VERILATOR_NONCC_OPTS)
+
+#----------------------------------------------------------------------------------------
+# gcc configuration/optimization
+#----------------------------------------------------------------------------------------
+VERILATOR_CXXFLAGS = \
+	$(SIM_CXXFLAGS) \
+	$(RUNTIME_PROFILING_CFLAGS) \
+	$(TRACING_CFLAGS) \
+	-D__STDC_FORMAT_MACROS \
+	-DTEST_HARNESS=V$(VLOG_MODEL) \
+	-DVERILATOR \
+	-include $(build_dir)/$(long_name).plusArgs \
+	-include $(build_dir)/verilator.h
+
+VERILATOR_LDFLAGS = $(SIM_LDFLAGS)
+
+VERILATOR_CC_OPTS = \
+	-CFLAGS "$(VERILATOR_CXXFLAGS)" \
+	-LDFLAGS "$(VERILATOR_LDFLAGS)"
+
+
+VERILATOR_NONCC_OPTS = \
+	$(RUNTIME_PROFILING_VFLAGS) \
+	$(RUNTIME_THREADS) \
+	$(VERILATOR_OPT_FLAGS) \
+	$(PLATFORM_OPTS) \
+	-Wno-fatal \
+	$(TIMESCALE_OPTS) \
+	$(MAX_WIDTH_OPTS) \
+	$(PREPROC_DEFINES) \
+	--top-module $(VLOG_MODEL) \
+	--vpi \
+	-f $(sim_common_files) \
+	$(sim_vsrcs)
