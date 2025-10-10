@@ -14,7 +14,7 @@
 	path = fgra-mg
 	url = https://cnb.cool/fudaneda/docker/fgra-mg.git
 	branch = main
-[submodule "llvm"]
-	path = llvm
+[submodule "llvm-project"]
+	path = llvm-project
 	url = https://cnb.cool/fudaneda/llvm-project.git
 	branch = release/10.x
