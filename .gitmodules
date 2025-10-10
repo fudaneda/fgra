@@ -1,16 +1,20 @@
 [submodule "app-compiler"]
 	path = app-compiler
-	url = https://cnb.cool/fudaneda/app-compiler.git
+	url = https://cnb.cool/fudaneda/docker/app-compiler.git
 	branch = main
 [submodule "benchmarks"]
 	path = benchmarks
-	url = https://cnb.cool/fudaneda/benchmarks.git
+	url = https://cnb.cool/fudaneda/docker/benchmarks.git
 	branch = main
 [submodule "fgra-mapper"]
 	path = fgra-mapper
-	url = https://cnb.cool/fudaneda/fgra-mapper.git
+	url = https://cnb.cool/fudaneda/docker/fgra-mapper.git
 	branch = main
 [submodule "fgra-mg"]
 	path = fgra-mg
-	url = https://cnb.cool/fudaneda/fgra-mg.git
+	url = https://cnb.cool/fudaneda/docker/fgra-mg.git
 	branch = main
+[submodule "llvm"]
+	path = llvm
+	url = https://cnb.cool/fudaneda/llvm-project.git
+	branch = release/10.x
