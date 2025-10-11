@@ -21,8 +21,8 @@ if [ ! -d sims/waveforms ]; then
     mkdir sims/waveforms/
 fi
 
-if [ ! -f ../chipyard/src/main/scala/config/FusionSoCConfigs.scala ]; then
-    sed '1d; $d' $PWD/fgra-mg/src/main/scala/soc/FusionSoCConfigs.scala > ../chipyard/src/main/scala/config/FusionSoCConfigs.scala
+if [ ! -f ../chipyard/src/main/scala/config/FusionMemSoCConfigs.scala ]; then
+    sed '1d; $d' $PWD/fgra-mg/src/main/scala/soc/FusionMemSoCConfigs.scala > ../chipyard/src/main/scala/config/FusionMemSoCConfigs.scala
 fi
 
 if [ ! -f sims/generated-src/verilator ] && [ ! -d sims/generated-src/verilator ]; then

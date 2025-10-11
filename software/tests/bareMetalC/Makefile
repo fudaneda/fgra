@@ -1,48 +1,7 @@
 include $(abs_top_srcdir)/Makefrag
 
 tests = \
-	ICGG \
-	fdtd \
-	2dstencil \
-	dynprog \
-	gemm \
-	hydro \
-	wave \
-	2d_ehf \
-	stencil3d \
-	equation \
-	iir \
-	2mm \
-	jacobi \
-	adi \
-	test \
-	test_bank_share \
-	test_dep 
-
-#	conv3x3_fir_unroll \
-#	pedometer_knn \
-#	stencil2d_gemm \
-#	parallel_pipeline \
-#	ldpc_match \
-#	test
-#
-#
-#	affine \
-#	array_add \
-#	conv2 \
-#	conv3 \
-#	conv2d_2x2 \
-#	fir \
-#	gemm \
-#	gemver \
-#	mvt \
-#	pedometer \
-#	stencil2d \
-#	stencil3d \
-#	multi_pipeline \
-#	multi_pipeline_long \
-#	ellpack \
-#	knn
+	add
 
 tests_baremetal = $(tests:=-baremetal)
 
