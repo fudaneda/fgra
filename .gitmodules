@@ -8,7 +8,7 @@
 	branch = main
 [submodule "fgra-mapper"]
 	path = fgra-mapper
-	url = https://github.com/fudaneda/fgra-mappeer
+	url = https://github.com/fudaneda/fgra-mapper
 	branch = main
 [submodule "fgra-mg"]
 	path = fgra-mg
