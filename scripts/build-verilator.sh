@@ -29,5 +29,5 @@ if [ $show_help -eq 1 ]; then
 fi
 
 cd ../../sims/verilator/
-make ${DEBUG} CONFIG=FusionMemSoCConfig VERILATOR_THREADS=64
+make ${DEBUG} CONFIG=FusionMemSoCConfig VERILATOR_THREADS=16 -j16
 

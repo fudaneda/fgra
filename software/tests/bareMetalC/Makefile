@@ -1,7 +1,8 @@
 include $(abs_top_srcdir)/Makefrag
 
 tests = \
-	add
+	add \
+	taylor
 
 tests_baremetal = $(tests:=-baremetal)
 
